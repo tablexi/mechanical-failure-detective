@@ -2,7 +2,7 @@
 
 **A local-first mechanical-engineering workshop demo using Python, Streamlit, Kev-4B, and llama.cpp's native System One API.**
 
-This hands-on lab simulates an industrial motor's rolling-element bearing. Junior engineers can modify operating data, inject synthetic mechanical faults, and compare two very different ways to reason about a machine:
+This hands-on lab simulates an industrial motor's rolling-element bearing. Users can modify operating data, inject synthetic mechanical faults, and compare two very different ways to reason about a machine:
 
 - **Native System One decisions:** the **real** Kev-4B model loaded in llama.cpp returns `choice`, `score`, and `noul` results from `/v1/systemone`.
 - **Interpretable engineering baseline:** basic Python point-based rules are always available, including when the model server is offline. Baseline points are **not** probabilities.
@@ -39,19 +39,24 @@ You can change temperature, vibration RMS, load, RPM, derived indices, notes, ma
 
 ### 1. Start llama.cpp with Kev-4B
 
-If Kev-4B is already on your computer:
+If you don't have llama.cpp, install it from [llama.app](https://llama.app)
 
-```bash
-llama-server -m /absolute/path/to/your/Kev-4B-Q4_K_M.gguf --host 127.0.0.1 --port 8080
+```
+curl -LsSf https://llama.app/install.sh | sh
 ```
 
-Or use llama.cpp's managed model repository (downloads once):
+Download Kev-4b to your computer
 
-```bash
-llama serve -hf ggml-org/Kev-4B-GGUF:Q4_K_M --host 127.0.0.1 --port 8080
+```
+mkdir ~/models
+uvx hf download hf://ggml-org/Kev-4B-GGUF/Kev-4B-Q4_K_M.gguf --local-dir ~/models
 ```
 
-Depending on your installed distribution, the executable may be `llama-server`, `llama`, or `./build/bin/llama-server`. If llama.cpp is older and returns **404** for `/v1/systemone`, update it. If you receive **501**, the loaded model/build does not support native decision inference.
+Start Kev-4B in its own terminal tab:
+
+```bash
+llama serve -m ~/models/Kev-4B-Q4_K_M.gguf --host 127.0.0.1 --port 8080
+```
 
 On supported servers, `/v1/models` indicates native decision capability through `architecture.output_modalities: ["decisions"]`. Older servers may omit this metadata, so it is advisory rather than required.
 
@@ -75,16 +80,15 @@ That second command should return an `answers.fault` object with choice probabil
 
 ```bash
 cd mechanical-failure-detective
-python3 -m venv .venv
-source .venv/bin/activate      # Linux / macOS
-# Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+uv venv --python 3.13 --seed --managed-python
+source .venv/bin/activate
+uv pip install -r requirements.txt
 ```
 
 ### 3. Smoke-test your Kev-4B server
 
 ```bash
-python check_server.py --scenario bearing
+uv run check_server.py --scenario bearing
 ```
 
 This makes a **real** native System One request and prints probabilities. If it fails, fix the server before troubleshooting Streamlit.
@@ -92,7 +96,7 @@ This makes a **real** native System One request and prints probabilities. If it 
 ### 4. Start the dashboard
 
 ```bash
-streamlit run app.py --server.address 127.0.0.1
+uv run streamlit run app.py --server.address 127.0.0.1
 ```
 
 Open the URL Streamlit prints (typically **http://127.0.0.1:8501**).
@@ -158,8 +162,8 @@ For the sensitivity lab, only `fault` is requested per sample to reduce processi
 ## Tests
 
 ```bash
-pip install -r requirements-dev.txt
-pytest -q
+uv pip install -r requirements-dev.txt
+uv run pytest -q
 ```
 
 Tests cover simulated scenarios, input validity, baseline rankings, HTTP request contract, mocked successful response parsing, malformed responses, and informative server errors. **They do not demonstrate live inference with your local Kev-4B; that requires running your own llama.cpp server.**
