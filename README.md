@@ -80,9 +80,7 @@ That second command should return an `answers.fault` object with choice probabil
 
 ```bash
 cd mechanical-failure-detective
-uv venv --python 3.13 --seed --managed-python
-source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
 ```
 
 ### 3. Smoke-test your Kev-4B server
